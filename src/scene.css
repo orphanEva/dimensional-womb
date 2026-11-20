@@ -1,0 +1,17 @@
+#hologram.bio-scene {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  animation: none;
+  pointer-events: none;
+}
+#hologram.bio-scene > canvas {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  transform: none;
+  mix-blend-mode: normal;
+  filter: none;
+}
