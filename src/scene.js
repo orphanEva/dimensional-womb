@@ -48,6 +48,38 @@ function createScene(container, textureURL, onFrame) {
   let record = {}, timestamp = null, sequence, session;
   let warp;
 
+  // Estimate a low-frequency relief from the registered plate. Blurring removes
+  // ink and screentone so printed detail does not turn into surface bumps.
+  function makeReliefMap() {
+    const map=document.createElement('canvas');
+    const side=map.width=map.height=144;
+    const ctx=map.getContext('2d');
+    ctx.filter='blur(1.25px)';
+    ctx.drawImage(texture,0,0,side,side);
+    const pixels=ctx.getImageData(0,0,side,side);
+    const rgba=pixels.data;
+    const height=new Float32Array(side*side);
+    for(let y=0;y<side;y++) for(let x=0;x<side;x++) {
+      const p=y*side+x,i=p*4;
+      const dx=(x/side-.49)/.113,dy=(y/side-.46)/.24;
+      const chamber=Math.exp(-dx*dx-dy*dy);
+      const tone=(.24*rgba[i]+.58*rgba[i+1]+.18*rgba[i+2])/255;
+      height[p]=(rgba[i+3]/255)*(.34+.64*tone-.27*chamber);
+    }
+    for(let y=0;y<side;y++) for(let x=0;x<side;x++) {
+      const p=y*side+x,i=p*4;
+      const nx=(height[p-(x>0?1:0)]-height[p+(x+1<side?1:0)])*side*.065;
+      const ny=(height[p-(y>0?side:0)]-height[p+(y+1<side?side:0)])*side*.065;
+      const normalLength=Math.hypot(nx,ny,1);
+      rgba[i]=127.5+127.5*nx/normalLength;
+      rgba[i+1]=127.5+127.5*ny/normalLength;
+      rgba[i+2]=255*height[p];
+      rgba[i+3]=255;
+    }
+    ctx.putImageData(pixels,0,0);
+    return map;
+  }
+
   // Map every destination texel back to one material point. The displacement
   // smoothly reaches zero at the edge of each region, including at overlaps.
   function createWarp() {
@@ -76,23 +108,39 @@ function createScene(container, textureURL, onFrame) {
       #endif
       varying vec2 uv;
       uniform sampler2D image;
+      uniform sampler2D relief;
       uniform vec4 region[3];
       uniform vec4 motion[3];
       uniform vec2 action[3];
       void main() {
         vec2 point=uv;
+        vec2 tilt=vec2(0.);
+        float depth=texture2D(relief,uv).b;
         for (int i=0;i<3;i++) {
           if (action[i].x==0.) continue;
           vec2 delta=point-region[i].xy;
           float reach=length(delta/region[i].zw);
           float f=action[i].x*(1.-smoothstep(.22,1.,reach));
-          delta-=motion[i].xy*f;
+          delta-=motion[i].xy*f*(.67+.53*depth);
+          // Raised folds travel farther than the recessed back wall.
+          delta-=vec2(.015,-.009)*(depth-.45)*f;
+          tilt+=f*(vec2(-.18,.34)-.48*delta/region[i].zw);
           float angle=action[i].y*f;
           float c=cos(angle),s=sin(angle);
           delta=vec2(c*delta.x+s*delta.y,-s*delta.x+c*delta.y);
           point=region[i].xy+delta/(1.+motion[i].zw*f);
         }
-        gl_FragColor=texture2D(image,point);
+        vec2 slope=texture2D(relief,point).rg*2.-1.;
+        vec3 rest=vec3(slope,sqrt(max(.001,1.-dot(slope,slope))));
+        vec3 bent=normalize(rest+vec3(tilt,0.));
+        vec3 key=normalize(vec3(-.57,-.65,.72));
+        vec3 halfVector=normalize(key+vec3(0.,0.,1.));
+        float diffuse=dot(bent-rest,key);
+        float highlight=pow(max(dot(bent,halfVector),0.),18.)
+                       -pow(max(dot(rest,halfVector),0.),18.);
+        vec4 ink=texture2D(image,point);
+        ink.rgb=clamp(ink.rgb*(1.+.40*diffuse)+ink.a*vec3(.24,.185,.21)*highlight,0.,ink.a);
+        gl_FragColor=ink;
       }`);
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program,gl.LINK_STATUS)) {
@@ -104,12 +152,22 @@ function createScene(container, textureURL, onFrame) {
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
     const position=gl.getAttribLocation(program,'pos');
     gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-    const pixels=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,pixels);
+    function bindTexture(unit,name) {
+      const layer=gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0+unit);
+      gl.bindTexture(gl.TEXTURE_2D,layer);
+      gl.uniform1i(gl.getUniformLocation(program,name),unit);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      return layer;
+    }
+    const normals=bindTexture(1,'relief');
+    gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL,gl.NONE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,makeReliefMap());
+    const pixels=bindTexture(0,'image');
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,size,size,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     const shape=gl.getUniformLocation(program,'region[0]'),pressure=gl.getUniformLocation(program,'action[0]');
     const movement=gl.getUniformLocation(program,'motion[0]');
@@ -131,7 +189,7 @@ function createScene(container, textureURL, onFrame) {
         return true;
       },
       dispose() {
-        gl.deleteTexture(pixels);gl.deleteBuffer(vertices);gl.deleteProgram(program);
+        gl.deleteTexture(normals);gl.deleteTexture(pixels);gl.deleteBuffer(vertices);gl.deleteProgram(program);
         gl.getExtension('WEBGL_lose_context')?.loseContext();
       }
     };

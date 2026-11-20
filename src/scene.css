@@ -13,5 +13,5 @@
   aspect-ratio: 1;
   transform: none;
   mix-blend-mode: normal;
-  filter: none;
+  filter: drop-shadow(1px 2px 1px rgba(105,32,72,.20)) drop-shadow(3px 7px 5px rgba(120,50,84,.15));
 }

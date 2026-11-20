@@ -1,6 +1,6 @@
 {
   "name": "dsh-dimensional-archive",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "DSH 会话驱动的只读角色状态看板",
   "type": "module",
   "main": "./index.js",

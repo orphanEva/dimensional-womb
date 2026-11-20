@@ -1,15 +1,15 @@
 # 次元子宫 · DSH 粉色漫画看板
 
-把当前 DSH 会话中已上报的角色反应画成漫画分镜。2.4 版采用樱花粉和草莓奶油色，保留褶皱深处的莓色墨线。主格与右下角的局部特写同步播放，动作次数、持续时间和引文均来自当前剧情。
+把当前 DSH 会话中已上报的角色反应画成樱粉色漫画分镜。2.5 版将导管的卷边画厚，把中央腔室压深。局部形变时，WebGL 根据原画估算的表面高度，让前后层产生轻微视差，并随褶皱的朝向调整高光。主格与右下角的特写使用同一帧。无 WebGL 时使用同一幅浮雕画稿与二维形变。
 
 ![粉色漫画分镜在隔离 DSH 测试会话中的实录](https://raw.githubusercontent.com/orphanEva/dimensional-womb/main/docs/pink-panel.gif)
 
 ## 安装
 
-下载 [2.4.0 安装包](https://github.com/orphanEva/dimensional-womb/raw/refs/heads/main/dist/dsh-dimensional-archive-2.4.0.tgz)，在下载目录运行下面的命令，再重新打开同一 profile 的 DSH，从侧栏进入「次元子宫」。本版针对 DeepSeek Harness Web 0.2.2-rc.5 开发。
+下载 [2.5.0 安装包](https://github.com/orphanEva/dimensional-womb/raw/refs/heads/main/dist/dsh-dimensional-archive-2.5.0.tgz)，在下载目录运行下面的命令，再重新打开同一 profile 的 DSH，从侧栏进入「次元子宫」。本版针对 DeepSeek Harness Web 0.2.2-rc.5 开发。
 
 ```sh
-dsh plugin --profile web add ./dsh-dimensional-archive-2.4.0.tgz
+dsh plugin --profile web add ./dsh-dimensional-archive-2.5.0.tgz
 ```
 
 从源码构建时，在仓库根目录运行 `node build.mjs` 生成客户端和独立预览，再运行 `pnpm pack` 生成安装包。
@@ -70,6 +70,6 @@ DSH 宿主从已提交的会话事件生成 dimensionalArchiveV2 投影。打开
 
 <details><summary>原画制作提示词（内置 ImageGen）</summary>
 
-Restyle the attached square artwork as a glossy strawberry-milk pink Japanese doujin color plate for a mature fantasy romance manga. Keep the very same fantasy uterus/reproductive cavity front-view drawing and registration: identical silhouette, curling ducts and bright core at x49%, y31%, lower taper at x49%, y86%, same black #000000 background and margins. Re-ink the curves with delicate, tapered raspberry-pink pen strokes rather than heavy crimson contours. Give the inner folds a soft, plump, pearly feel; luminous pale sakura and milky petal pink as dominant midtones, candy strawberry and dusty mauve as shadow accents, milky ivory curved shine with a few slender glistening streaks following the folds. Sparse diagonal hatching and delicate, visible printed screentone in deepest shadows. Warm intimate adult doujin manga finish, expressive cel-painted color separations, lovely broad pink shapes immediately readable at thumbnail size. Pure black backdrop to composite in a game UI. Only the single registered artwork, no words, bubbles, border, figures or floating effects.
+Edit the attached registered square game illustration: give this exact pink fantasy uterus clearly visible sculpted depth, like a polished hand-painted 3D maquette illustrated on a high-end Japanese manga color plate. Preserve the frontal view, pink-on-black outer silhouette, scale, placement and original slender pen contours. Match its high curled ducts and centered apricot jewel at x50% y31%, lower taper at x50% y87%. Make the near lips of both curled ducts convincingly round and thick, with their hollow spirals visibly receding; layer the cutaway wall in front of a noticeably recessed central chamber. Turn flat inner folds into individually modeled, overlapping, curved pink satin ridges with convex tops and gently rounded undersides. One broad softbox at upper left, believable raspberry occlusion shadows under every overhang, soft strawberry-pink reflected light inside the cavity, delicate broken cream specular glints. Highly dimensional yet unmistakably the same sakura-pink manga plate, elegant printed linework, restrained halftone, volume visible at a small size. No photoreal or medical gore. Plain pure black #000000 background ready for compositing, untouched outside the silhouette. No cast shadow in background, floor, text, grid, border, people, or additional objects. Square asset.
 
 </details>
